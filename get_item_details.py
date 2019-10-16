@@ -17,8 +17,10 @@ if __name__ == '__main__':
     # as_split = search_page_body.splitlines()
     parser = etree.HTMLParser()
     tree = etree.fromstring(search_page_body, parser)
-    search_results = tree.xpath('//div[@id="search-results"]')
-    # orig_serialized = etree.tostring(tree)
-    # error_corrected_tree = ET.fromstring(orig_serialized)
-    # search_results = error_corrected_tree.find('div[@id="search-results"]')
+    search_results = tree.xpath('//div[@id=\'search-results\']/ul[1]/li')
+    for c in search_results:
+        pass
+    # for search_result in search_results:
+    #     link_node = search_results.xpath('/a[0]')
+    #     link = "https://www.rei.com/" + link_node.attributes
     pass
