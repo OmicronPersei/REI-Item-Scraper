@@ -17,9 +17,13 @@ def parse_html(html):
     parser = etree.HTMLParser()
     return etree.fromstring(html, parser)
 
+def get_and_parse_html(link):
+    response = get_html(link)
+    page = parse_html(response)
+    return page
+
 def get_search_results(link):
-    search_page_body = get_html(link)
-    tree = parse_html(search_page_body)
+    tree = get_and_parse_html(link)
     search_results = tree.xpath('//div[@id=\'search-results\']/ul[1]/li')
     return search_results
 
@@ -40,18 +44,22 @@ def get_search_results_with_retries(link):
         print("After {} tries, still could not get search results".format(str(max_tries)))
         exit
 
-def get_item_properties(link):
-    response = get_html(link)
-    page = parse_html(response)
+def get_product_details(page):
     properties_elem = page.xpath('//script[@data-client-store=\'product-details\']')[0]
     return json.loads(properties_elem.text)
 
-def get_item_props_with_retries(link):
+def get_price_data(page):
+    properties_elem = page.xpath('//script[@data-client-store=\'product-price-data\']')[0]
+    return json.loads(properties_elem.text)
+
+def get_item_data_with_retries(link):
     max_tries = 1
     for _ in range(0,max_tries):
         try:
-            item_props = get_item_properties(link)
-            return item_props
+            page_data = get_and_parse_html(link)
+            item_props = get_product_details(page_data)
+            price_data = get_price_data(page_data)
+            return item_props, price_data
         except:
             time.sleep(sleep_amount)
 
@@ -88,14 +96,14 @@ if __name__ == '__main__':
         if 'rei-garage' in link:
             continue
 
-        item_props = get_item_props_with_retries(link)
+        item_data = get_item_data_with_retries(link)
 
-        print("Link: {}\n".format(link))
+        print("Succesfully scraped link: {}".format(link))
 
-        if item_props == None:
+        if item_data == None:
             continue
 
-        item_obj = { "link": link, "props": item_props }
+        item_obj = { "link": link, "props": item_data[0], "price_data": item_data[1] }
         items.append(item_obj)
         time.sleep(sleep_amount)
 

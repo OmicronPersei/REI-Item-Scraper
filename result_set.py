@@ -1,4 +1,5 @@
 import json
+import sys
 
 if __name__ == '__main__':
     with open('result.json', mode='r') as f:
@@ -29,10 +30,22 @@ if __name__ == '__main__':
     def get_sleeping_capacity(item):
         return get_spec(item, "sleeping capacity")
 
-    items_to_sort = [{"link": x["link"], "weight": get_weight_safe(x), "sleeping capacity": get_sleeping_capacity(x)} for x in items]
+    def get_price(item):
+        return item["price_data"]["max"]
 
-    items_to_sort.sort(key=lambda x: x["weight"])
+    items = [{
+        "link": x["link"], 
+        "weight": get_weight_safe(x), 
+        "sleeping capacity": get_sleeping_capacity(x),
+        "price": get_price(x)} for x in items]
 
-    for item in items_to_sort:
-        if (item["sleeping capacity"] == "2-person"):
-            print(item)
+    # items.sort(key=lambda x: x["weight"])
+
+    # items_filtered = [x for x in items if x["sleeping capacity"] == "2-person"]
+
+    with open('results.csv', mode='w') as f:
+        keys = [x for x in items[0]]
+        f.write(','.join(keys) + '\n')
+        for item in items:
+            item_line = ','.join([str(item[k]) for k in keys])
+            f.write(item_line + '\n')    
