@@ -1,8 +1,9 @@
 import requests
 from lxml import etree
-import xml.etree.ElementTree as ET
 import time
 import json
+
+sleep_amount = 1
 
 def get_html(link):
     response = requests.get(link)
@@ -16,12 +17,28 @@ def parse_html(html):
     parser = etree.HTMLParser()
     return etree.fromstring(html, parser)
 
-def get_search_results():
-    base_url = 'https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price'
-    search_page_body = get_html(base_url)
+def get_search_results(link):
+    search_page_body = get_html(link)
     tree = parse_html(search_page_body)
     search_results = tree.xpath('//div[@id=\'search-results\']/ul[1]/li')
     return search_results
+
+def get_search_results_with_retries(link):
+    max_tries = 10
+    search_results = None
+    for _ in range(0,max_tries):
+        try:
+            search_results = get_search_results(link)
+            if search_results == None:
+                raise Exception()
+            else:
+                return search_results
+        except:
+            time.sleep(sleep_amount)
+
+    if (search_results == None):
+        print("After {} tries, still could not get search results".format(str(max_tries)))
+        exit
 
 def get_item_properties(link):
     response = get_html(link)
@@ -35,35 +52,43 @@ def get_packed_weight(item_properties):
     value = packed_weight["values"][0]
     tokens = value.split(' ')
     pounds = int(tokens[0])
-    if len(tokens) == 4:
+    if len(tokens) >= 4:
         pounds = pounds + (float(tokens[2])/16.0)
     return pounds
 
+def get_packed_weight_with_retries(link):
+    max_tries = 2
+    for _ in range(0,max_tries):
+        try:
+            item_props = get_item_properties(link)
+            packed_weight = get_packed_weight(item_props)
+            return packed_weight
+        except:
+            time.sleep(sleep_amount)
+
+    print("Could not get the item properties for {}".format(link))
+    return None
 
 
 if __name__ == '__main__':
-    
-    max_tries = 10
-    i = 0
-    search_results = None
-    while (search_results == None) or (i == max_tries):
-        search_results = get_search_results()
-        if search_results == None:
-            time.sleep(5)
-            i = i + 1
-
-    if (search_results == None):
-        print("After {} tries, still could not get search results".format(str(max_tries)))
-        exit
+    # https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price'
+    links = [
+        'https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price',
+        'https://www.rei.com/c/backpacking-tents?ir=category%3Abackpacking-tents&page=2&pagesize=90&r=c%3Bbest-use%3ABackpacking&sort=max-price'
+    ]
+    search_results = []
+    for link in links:
+        result = list(get_search_results_with_retries(link))
+        search_results.extend(result)
     
     items = []
     for search_result in search_results:
         link_node = search_result.xpath('a[1]')[0]
         link = "https://www.rei.com/" + link_node.attrib["href"]
-        item_props = get_item_properties(link)
-        packed_weight = get_packed_weight(item_props)
-        print("Link: {}\nPacked Weight: {}".format(link, packed_weight))
-        item_obj = { "link": link, "packaged weight": packed_weight }
+        packaged_weight = get_packed_weight_with_retries(link)
+
+        print("Link: {}\nPacked Weight: {}\n\n".format(link, packaged_weight))
+
+        item_obj = { "link": link, "packaged weight": packaged_weight }
         items.append(item_obj)
-        time.sleep(2)
-    pass
+        time.sleep(sleep_amount)
