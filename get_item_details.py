@@ -1,26 +1,61 @@
 import requests
 from lxml import etree
 import xml.etree.ElementTree as ET
+import time
+import json
 
-base_url = 'https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price'
+def get_html(link):
+    response = requests.get(link)
+
+    if response.status_code != 200:
+        print("unable to get OK HTTP response, status was {0}".format(str(response.status_code)))
+
+    return response.content.decode(encoding='utf-8')
+
+def parse_html(html):
+    parser = etree.HTMLParser()
+    return etree.fromstring(html, parser)
+
+def get_search_results():
+    base_url = 'https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price'
+    search_page_body = get_html(base_url)
+    tree = parse_html(search_page_body)
+    search_results = tree.xpath('//div[@id=\'search-results\']/ul[1]/li')
+    return search_results
+
+def get_item_properties(link):
+    response = get_html(link)
+    page = parse_html(response)
+    properties_elem = page.xpath('//script[@data-client-store=\'product-details\']')[0]
+    return json.loads(properties_elem.text)
+
+def get_packed_weight(item_properties):
+    specs = item_properties["specs"]
+    packed_weight = [x for x in specs if x["name"] == "Packaged Weight"][0]
+    return packed_weight["values"][0]
+
 
 if __name__ == '__main__':
-    search_page_resonse = requests.get(base_url)
-
-    if search_page_resonse.status_code != 200:
-        print("unable to get search page response, status was {0}".format(str(search_page_resonse.status_code)))
-        exit
-    else:
-        print("got website content successfully")
     
-    search_page_body = search_page_resonse.content.decode(encoding='utf-8')
-    # as_split = search_page_body.splitlines()
-    parser = etree.HTMLParser()
-    tree = etree.fromstring(search_page_body, parser)
-    search_results = tree.xpath('//div[@id=\'search-results\']/ul[1]/li')
-    for c in search_results:
-        pass
-    # for search_result in search_results:
-    #     link_node = search_results.xpath('/a[0]')
-    #     link = "https://www.rei.com/" + link_node.attributes
+    max_tries = 10
+    i = 0
+    search_results = None
+    while (search_results == None) or (i == max_tries):
+        search_results = get_search_results()
+        if search_results == None:
+            time.sleep(5)
+            i = i + 1
+
+    if (search_results == None):
+        print("After {} tries, still could not get search results".format(str(max_tries)))
+        exit
+    
+    # result_links = []
+    for search_result in search_results:
+        link_node = search_result.xpath('a[1]')[0]
+        link = "https://www.rei.com/" + link_node.attrib["href"]
+        item_props = get_item_properties(link)
+        packed_weight = get_packed_weight(item_props)
+        print("Link: {}\nPacked Weight: {}".format(link, packed_weight))
+        time.sleep(5)
     pass
