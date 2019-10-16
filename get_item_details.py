@@ -17,7 +17,7 @@ if __name__ == '__main__':
     # as_split = search_page_body.splitlines()
     parser = etree.HTMLParser()
     tree = etree.fromstring(search_page_body, parser)
-    search_results = tree.xpath('//div[@id=\'search-results\']')
+    search_results = tree.xpath('//div[@id="search-results"]')
     # orig_serialized = etree.tostring(tree)
     # error_corrected_tree = ET.fromstring(orig_serialized)
     # search_results = error_corrected_tree.find('div[@id="search-results"]')
