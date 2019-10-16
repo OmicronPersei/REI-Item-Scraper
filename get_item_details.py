@@ -87,13 +87,18 @@ if __name__ == '__main__':
         search_results.extend(result)
 
     search_results = set(search_results)
+
+    log = []
     
     items = []
     for search_result in search_results:
         link_node = search_result.xpath('a[1]')[0]
         link = "https://www.rei.com" + link_node.attrib["href"]
 
+        log.append("attempting link {}".format(link))
+
         if 'rei-garage' in link:
+            log.append("skipping link {} due to it being rei-garage".format(link))
             continue
 
         item_data = get_item_data_with_retries(link)
@@ -101,12 +106,17 @@ if __name__ == '__main__':
         print("Succesfully scraped link: {}".format(link))
 
         if item_data == None:
+            log.append("item_data for {} is None".format(link))
             continue
 
         item_obj = { "link": link, "props": item_data[0], "price_data": item_data[1] }
         items.append(item_obj)
+        log.append("saved data for link {}".format(link))
         time.sleep(sleep_amount)
 
-    with open('result.json', mode='w') as f:
+    with open('scraped_data.json', mode='w') as f:
         json_serialized = json.dumps(items)
         f.write(json_serialized)
+
+    with open('log.txt', mode='w') as f:
+        f.writelines(log)

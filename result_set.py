@@ -2,7 +2,7 @@ import json
 import sys
 
 if __name__ == '__main__':
-    with open('result.json', mode='r') as f:
+    with open('scraped_data.json', mode='r') as f:
         items = json.load(f)
 
     def get_spec(item, prop):

@@ -104,4 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # User ignores
-result.json
+scraped_data.json
+results.csv
+log.txt
