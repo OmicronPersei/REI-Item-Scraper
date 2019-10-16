@@ -86,14 +86,16 @@ if __name__ == '__main__':
         result = list(get_search_results_with_retries(link))
         search_results.extend(result)
 
-    search_results = set(search_results)
-
     log = []
     
-    items = []
+    items = dict()
     for search_result in search_results:
         link_node = search_result.xpath('a[1]')[0]
         link = "https://www.rei.com" + link_node.attrib["href"]
+
+        if items.get(link):
+            log.append("already got link {}".format(link))
+            continue
 
         log.append("attempting link {}".format(link))
 
@@ -110,12 +112,12 @@ if __name__ == '__main__':
             continue
 
         item_obj = { "link": link, "props": item_data[0], "price_data": item_data[1] }
-        items.append(item_obj)
+        items[link] = item_obj
         log.append("saved data for link {}".format(link))
         time.sleep(sleep_amount)
 
     with open('scraped_data.json', mode='w') as f:
-        json_serialized = json.dumps(items)
+        json_serialized = json.dumps(list(items.values()))
         f.write(json_serialized)
 
     with open('log.txt', mode='w') as f:
