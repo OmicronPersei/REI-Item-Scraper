@@ -46,23 +46,12 @@ def get_item_properties(link):
     properties_elem = page.xpath('//script[@data-client-store=\'product-details\']')[0]
     return json.loads(properties_elem.text)
 
-def get_packed_weight(item_properties):
-    specs = item_properties["specs"]
-    packed_weight = [x for x in specs if x["name"] == "Packaged Weight"][0]
-    value = packed_weight["values"][0]
-    tokens = value.split(' ')
-    pounds = int(tokens[0])
-    if len(tokens) >= 4:
-        pounds = pounds + (float(tokens[2])/16.0)
-    return pounds
-
-def get_packed_weight_with_retries(link):
+def get_item_props_with_retries(link):
     max_tries = 1
     for _ in range(0,max_tries):
         try:
             item_props = get_item_properties(link)
-            packed_weight = get_packed_weight(item_props)
-            return packed_weight
+            return item_props
         except:
             time.sleep(sleep_amount)
 
@@ -71,7 +60,6 @@ def get_packed_weight_with_retries(link):
 
 
 if __name__ == '__main__':
-    # https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price'
     links = [
         'https://www.rei.com/c/backpacking-tents?pagesize=90',
         'https://www.rei.com/c/backpacking-tents?page=2&pagesize=90',
@@ -95,15 +83,19 @@ if __name__ == '__main__':
     items = []
     for search_result in search_results:
         link_node = search_result.xpath('a[1]')[0]
-        link = "https://www.rei.com/" + link_node.attrib["href"]
-        packaged_weight = get_packed_weight_with_retries(link)
+        link = "https://www.rei.com" + link_node.attrib["href"]
 
-        print("Link: {}\nPacked Weight: {}\n\n".format(link, packaged_weight))
-
-        if packaged_weight == None:
+        if 'rei-garage' in link:
             continue
 
-        item_obj = { "link": link, "packaged weight": packaged_weight }
+        item_props = get_item_props_with_retries(link)
+
+        print("Link: {}\n".format(link))
+
+        if item_props == None:
+            continue
+
+        item_obj = { "link": link, "props": item_props }
         items.append(item_obj)
         time.sleep(sleep_amount)
 
