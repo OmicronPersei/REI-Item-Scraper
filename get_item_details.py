@@ -57,7 +57,7 @@ def get_packed_weight(item_properties):
     return pounds
 
 def get_packed_weight_with_retries(link):
-    max_tries = 2
+    max_tries = 1
     for _ in range(0,max_tries):
         try:
             item_props = get_item_properties(link)
@@ -73,8 +73,9 @@ def get_packed_weight_with_retries(link):
 if __name__ == '__main__':
     # https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price'
     links = [
-        'https://www.rei.com/c/backpacking-tents?r=c%3Bbest-use%3ABackpacking&pagesize=90&ir=category%3Abackpacking-tents&sort=max-price',
-        'https://www.rei.com/c/backpacking-tents?ir=category%3Abackpacking-tents&page=2&pagesize=90&r=c%3Bbest-use%3ABackpacking&sort=max-price'
+        'https://www.rei.com/c/backpacking-tents?pagesize=90',
+        'https://www.rei.com/c/backpacking-tents?page=2&pagesize=90',
+        'https://www.rei.com/c/backpacking-tents?page=3&pagesize=90'
     ]
     search_results = []
     for link in links:
@@ -89,6 +90,13 @@ if __name__ == '__main__':
 
         print("Link: {}\nPacked Weight: {}\n\n".format(link, packaged_weight))
 
+        if packaged_weight == None:
+            continue
+
         item_obj = { "link": link, "packaged weight": packaged_weight }
         items.append(item_obj)
         time.sleep(sleep_amount)
+
+    with open('result.json', mode='w') as f:
+        json_serialized = json.dumps(items)
+        f.write(json_serialized)
