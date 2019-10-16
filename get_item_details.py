@@ -3,7 +3,7 @@ from lxml import etree
 import time
 import json
 
-sleep_amount = 1
+sleep_amount = 0.3
 
 def get_html(link):
     response = requests.get(link)
@@ -75,12 +75,22 @@ if __name__ == '__main__':
     links = [
         'https://www.rei.com/c/backpacking-tents?pagesize=90',
         'https://www.rei.com/c/backpacking-tents?page=2&pagesize=90',
-        'https://www.rei.com/c/backpacking-tents?page=3&pagesize=90'
+        'https://www.rei.com/c/backpacking-tents?page=3&pagesize=90',
+        'https://www.rei.com/c/camping-tents?pagesize=90',
+        'https://www.rei.com/c/tents?page=2&pagesize=90',
+        'https://www.rei.com/c/tents?page=3&pagesize=90',
+        'https://www.rei.com/c/tents?page=4&pagesize=90',
+        'https://www.rei.com/c/tents?page=5&pagesize=90',
+        'https://www.rei.com/c/tents?page=6&pagesize=90',
+        'https://www.rei.com/c/tents?page=7&pagesize=90'
+
     ]
     search_results = []
     for link in links:
         result = list(get_search_results_with_retries(link))
         search_results.extend(result)
+
+    search_results = set(search_results)
     
     items = []
     for search_result in search_results:
