@@ -32,7 +32,13 @@ def get_item_properties(link):
 def get_packed_weight(item_properties):
     specs = item_properties["specs"]
     packed_weight = [x for x in specs if x["name"] == "Packaged Weight"][0]
-    return packed_weight["values"][0]
+    value = packed_weight["values"][0]
+    tokens = value.split(' ')
+    pounds = int(tokens[0])
+    if len(tokens) == 4:
+        pounds = pounds + (float(tokens[2])/16.0)
+    return pounds
+
 
 
 if __name__ == '__main__':
@@ -50,12 +56,14 @@ if __name__ == '__main__':
         print("After {} tries, still could not get search results".format(str(max_tries)))
         exit
     
-    # result_links = []
+    items = []
     for search_result in search_results:
         link_node = search_result.xpath('a[1]')[0]
         link = "https://www.rei.com/" + link_node.attrib["href"]
         item_props = get_item_properties(link)
         packed_weight = get_packed_weight(item_props)
         print("Link: {}\nPacked Weight: {}".format(link, packed_weight))
-        time.sleep(5)
+        item_obj = { "link": link, "packaged weight": packed_weight }
+        items.append(item_obj)
+        time.sleep(2)
     pass
