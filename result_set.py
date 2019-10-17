@@ -13,7 +13,7 @@ if __name__ == '__main__':
         
         return matching_specs[0]["values"][0]
 
-    def get_packed_weight(item):
+    def parsed_packed_weight_str_to_float(item):
         packaged_weight = get_spec(item, "packaged weight")
         tokens = packaged_weight.split(' ')
         pounds = float(tokens[0])
@@ -23,9 +23,9 @@ if __name__ == '__main__':
 
     def get_weight_safe(item):
         try:
-            return get_packed_weight(item)
+            return parsed_packed_weight_str_to_float(item)
         except:
-            return 9999
+            return None
 
     def get_sleeping_capacity(item):
         return get_spec(item, "sleeping capacity")
@@ -38,10 +38,6 @@ if __name__ == '__main__':
         "weight": get_weight_safe(x), 
         "sleeping capacity": get_sleeping_capacity(x),
         "price": get_price(x)} for x in items]
-
-    # items.sort(key=lambda x: x["weight"])
-
-    # items_filtered = [x for x in items if x["sleeping capacity"] == "2-person"]
 
     with open('results.csv', mode='w') as f:
         keys = [x for x in items[0]]

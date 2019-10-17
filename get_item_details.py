@@ -59,6 +59,9 @@ def get_item_data_with_retries(link):
             page_data = get_and_parse_html(link)
             item_props = get_product_details(page_data)
             price_data = get_price_data(page_data)
+
+            print("Succesfully scraped link: {}".format(link))
+
             return item_props, price_data
         except:
             time.sleep(sleep_amount)
@@ -66,6 +69,43 @@ def get_item_data_with_retries(link):
     print("Could not get the item properties for {}".format(link))
     return None
 
+def create_link_from_node(search_result):
+    link_node = search_result.xpath('a[1]')[0]
+    return "https://www.rei.com" + link_node.attrib["href"]
+
+def should_process_link(link, links_processed_dict, log):
+    if items.get(link):
+        log.append("already got link {}".format(link))
+        return False
+
+    log.append("attempting link {}".format(link))
+
+    if 'rei-garage' in link:
+        log.append("skipping link {} due to it being rei-garage".format(link))
+        return False
+    
+    return True
+
+def append_item_data_to_dict(link, item_data, items_dict, log):
+    item_obj = { "link": link, "props": item_data[0], "price_data": item_data[1] }
+    items_dict[link] = item_obj
+    log.append("saved data for link {}".format(link))
+
+def write_scraped_data_to_file(scraped_data):
+    with open('scraped_data.json', mode='w') as f:
+        json_serialized = json.dumps(list(scraped_data.values()))
+        f.write(json_serialized)
+
+def write_logs(log):
+    with open('log.txt', mode='w') as f:
+        f.write('\n'.join(log))
+
+def get_search_results_page_bodies_from_links(links):
+    search_results = []
+    for link in links:
+        result = list(get_search_results_with_retries(link))
+        search_results.extend(result) 
+    return search_results   
 
 if __name__ == '__main__':
     links = [
@@ -81,44 +121,23 @@ if __name__ == '__main__':
         'https://www.rei.com/c/tents?page=7&pagesize=90'
 
     ]
-    search_results = []
-    for link in links:
-        result = list(get_search_results_with_retries(link))
-        search_results.extend(result)
-
+    
+    search_result_pages = get_search_results_page_bodies_from_links(links)
     log = []
     
     items = dict()
-    for search_result in search_results:
-        link_node = search_result.xpath('a[1]')[0]
-        link = "https://www.rei.com" + link_node.attrib["href"]
+    for search_result_page in search_result_pages:
+        link = create_link_from_node(search_result_page)
 
-        if items.get(link):
-            log.append("already got link {}".format(link))
-            continue
-
-        log.append("attempting link {}".format(link))
-
-        if 'rei-garage' in link:
-            log.append("skipping link {} due to it being rei-garage".format(link))
+        if not should_process_link(link, items, log):
             continue
 
         item_data = get_item_data_with_retries(link)
 
-        print("Succesfully scraped link: {}".format(link))
+        append_item_data_to_dict(link, item_data, items, log)
 
-        if item_data == None:
-            log.append("item_data for {} is None".format(link))
-            continue
-
-        item_obj = { "link": link, "props": item_data[0], "price_data": item_data[1] }
-        items[link] = item_obj
-        log.append("saved data for link {}".format(link))
         time.sleep(sleep_amount)
 
-    with open('scraped_data.json', mode='w') as f:
-        json_serialized = json.dumps(list(items.values()))
-        f.write(json_serialized)
+    write_scraped_data_to_file(items)
 
-    with open('log.txt', mode='w') as f:
-        f.writelines(log)
+    write_logs(log)
