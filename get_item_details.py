@@ -22,7 +22,7 @@ def get_and_parse_html(link):
     page = parse_html(response)
     return page
 
-def get_search_results(link):
+def get_search_result_deserialized_body(link):
     tree = get_and_parse_html(link)
     search_results = tree.xpath('//div[@id=\'search-results\']/ul[1]/li')
     return search_results
@@ -32,7 +32,7 @@ def get_search_results_with_retries(link):
     search_results = None
     for _ in range(0,max_tries):
         try:
-            search_results = get_search_results(link)
+            search_results = get_search_result_deserialized_body(link)
             if search_results == None:
                 raise Exception()
             else:
